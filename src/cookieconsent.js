@@ -2,6 +2,7 @@ import { getCookie as getRawCookie, createCookie as createRawCookie, deleteCooki
 import insertCookieBanner from './banner';
 import { enableScriptsByCategories, enableIframesByCategories } from './enable';
 import { getNoBanner, getPolicyUrl, makeUrlAbsolute } from './settings';
+import { disableConsentPropagation, enableConsentPropagation, propagateConsentIfEnabled } from './sharedConsent';
 
 /**
  * If cookie rules/regulations change and the cookie itself needs to change,
@@ -106,6 +107,8 @@ function setConsent(consent, mode = COOKIE_TYPE.LONG) {
   };
 
   createCookie(cookieValue, days, path);
+
+  getConsentSetting('consented') ? enableConsentPropagation(getConsent()):disableConsentPropagation();
 }
 
 /**
@@ -224,6 +227,9 @@ function shouldShowBanner() {
  * - enables scripts and iframes depending on the consent
  */
 export function onload() {
+  getConsentSetting('consented') ? enableConsentPropagation(getConsent()):disableConsentPropagation();
+  propagateConsentIfEnabled();
+
   if (shouldShowBanner()) {
     if (NO_BANNER) {
       // If NO_BANNER mode, we need to set "implied consent" to every cookie type
