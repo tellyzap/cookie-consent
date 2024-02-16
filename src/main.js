@@ -1,5 +1,6 @@
 import { getConsentSetting, setConsentSetting, onload } from './cookieconsent';
 import { version } from '../package.json';
+import { urlWithCookieConsent } from './sharedConsent';
 
 export const VERSION = version;
 
@@ -55,6 +56,8 @@ window.NHSCookieConsent = {
   setStatistics,
   setMarketing,
   setConsented,
+
+  urlWithCookieConsent
 };
 /* eslint-enable sort-keys */
 
