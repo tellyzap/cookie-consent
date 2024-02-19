@@ -2,7 +2,13 @@ import { getCookie as getRawCookie, createCookie as createRawCookie, deleteCooki
 import insertCookieBanner from './banner';
 import { enableScriptsByCategories, enableIframesByCategories } from './enable';
 import { getNoBanner, getPolicyUrl, makeUrlAbsolute } from './settings';
-import { hasConsentQueryParam, setSharedConsent, getConsentFromQueryParam } from './sharedConsent';
+import {
+  hasConsentQueryParam,
+  getConsentFromQueryParam,
+  enableConsentPropagation,
+  disableConsentPropagation,
+  removeConsentQueryParam,
+} from './sharedConsent';
 
 /**
  * If cookie rules/regulations change and the cookie itself needs to change,
@@ -108,8 +114,12 @@ function setConsent(consent, mode = COOKIE_TYPE.LONG) {
 
   createCookie(cookieValue, days, path);
 
-  //getConsentSetting('consented') ? enableConsentPropagation(getConsent()):disableConsentPropagation();
-  setSharedConsent(getConsent());
+  // eslint-disable-next-line no-use-before-define
+  if (getConsentSetting('consented')) {
+    enableConsentPropagation(getConsent());
+  } else {
+    disableConsentPropagation();
+  }
 }
 
 /**
@@ -233,9 +243,11 @@ function shouldShowBanner() {
  * - enables scripts and iframes depending on the consent
  */
 export function onload() {
-  //getConsentSetting('consented') ? enableConsentPropagation(getConsent()):disableConsentPropagation();
-  //propagateConsentIfEnabled();
-
+  if (getConsentSetting('consented')) {
+    enableConsentPropagation(getConsent());
+  } else {
+    disableConsentPropagation();
+  }
 
   if (shouldShowBanner()) {
     if (NO_BANNER) {
@@ -255,6 +267,7 @@ export function onload() {
 
   if (hasConsentQueryParam()) {
     setConsent(getConsentFromQueryParam());
+    removeConsentQueryParam();
   }
 
   // if a cookie is set but it's invalid, clear all cookies.

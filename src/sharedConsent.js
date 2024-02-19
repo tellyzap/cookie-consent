@@ -1,145 +1,126 @@
-// let shouldPropagateConsent = false;
-// let originalUrl = "";
+/* eslint-disable no-console */
+let shouldPropagateConsent = false;
 
-// // let observer = new MutationObserver(() => {
-// //   if (shouldPropagateConsent && window.location.href !== originalUrl) {
-// //     console.log(`URL changed from ${previousUrl} to ${window.location.href}`);
-// //     //previousUrl = window.location.href;
-
-// //     window.history.replaceState({}, '', `${window.location.href}${makeQueryParam()}`);
-// //   }
-// // });
-// // const config = { subtree: true, childList: true };
-
-// // // start observing change
-// // observer.observe(document, config);
-
-let consent = {
+/* eslint-disable sort-keys */
+let consentVal = {
   necessary: true,
   preferences: false,
   statistics: false,
   marketing: false,
   consented: false,
 };
+/* eslint-enable sort-key */
 
-// window.addEventListener('beforeunload', (_ev) => {
-//   //observer.disconnect();
-//   window.history.replaceState({}, '', `${makeQueryParam()}`);
-//   if (shouldPropagateConsent && window.location.href !== originalUrl) {
-//     console.log(`URL changed from ${previousUrl} to ${window.location.href}`);
-//     //previousUrl = window.location.href;
+/**
+ * Allow-list of sites that have opted in to shared cookie consent
+ */
+const allowlist = [
+  'wwwnhsuk.azurewebsites.net',
+  'wwwnhsappservicenhsuk.azurewebsites.net',
+  'accessloginnhsuk.azurewebsites.net',
+  'www.nhs.uk',
+];
 
-//     window.history.replaceState({}, '', `${window.location.href}${makeQueryParam()}`);
-//   }
-// });
-
-// window.addEventListener("popstate", (event) => {
-//   console.log('popstate', event);
-//   alert(
-//     `location: ${document.location}, state: ${JSON.stringify(event.state)}`,
-//   );
-// });
-
-// window.addEventListener(
-//   "hashchange",
-//   () => {
-//     console.log("The hash has changed!");
-//   },
-//   false,
-// );
-
-
-// export function enableConsentPropagation(consent) {
-//   console.log('enablePropagation');
-//   shouldPropagateConsent = true;
-//   // popups = popups;
-//   // analytics = analytics;
-//   // healthCampaigns = healthCampaigns;
-//   consent = consent;
-// }
-
-// export function disableConsentPropagation() {
-//   console.log('disablePropagation');
-//   shouldPropagateConsent = false;
-// }
-
-// export function propagateConsentIfEnabled() {
-//   //const originalUrl = window.location.href;
-//    originalUrl = window.location.href;
-
-//   // observer = new MutationObserver(() => {
-//   //   if (shouldPropagateConsent && window.location.href !== originalUrl) {
-//   //     console.log(`URL changed from ${previousUrl} to ${window.location.href}`);
-//   //     //previousUrl = window.location.href;
-
-//   //     window.history.replaceState({}, '', `${window.location.href}${makeQueryParam()}`);
-//   //   }
-//   // });
-
-//   // const config = { subtree: true, childList: true };
-
-//   // start observing change
-//   //observer.observe(document, config);
-// }
-
-// function makeQueryParam() {
-//   const isFirstParam = location.search.length === 0;
-
-//   const analytics = consent.statistics ? '1' : '0';
-//   const popups = consent.marketing ? '1' : '0';
-//   const healthCampaigns = consent.preferences ? '1' : '0';
-
-//   return `${isFirstParam ? '?' : '&'}consent=an${analytics}pu${popups}hc${healthCampaigns}`
-// }
-
-export function setSharedConsent(consent) {
-    console.log('setSharedConsent');
-    consent = consent;
+/**
+ * Creates a URL object from an absolute or relative URL
+ * @param {string} url
+ * @returns {URL}
+ */
+function safeCreateURL(url) {
+  let safeUrl;
+  try {
+    safeUrl = new URL(url);
+  } catch (e) {
+    safeUrl = new URL(url, window.location.href);
+  }
+  return safeUrl;
 }
 
-// export function getConsentQueryParam() {
-//   const urlParams = new URLSearchParams(location.search);
+/**
+ * Adds consent query param to any URLs in links, if the href contains a different domain to the
+ * current one, which is in the allowlist
+ */
+window.addEventListener('click', (e) => {
+  if (shouldPropagateConsent) {
+    const href = e.target.getAttribute('href');
+    if (href) {
+      const url = safeCreateURL(href);
+      if (url.hostname !== window.location.hostname && allowlist.includes(url.hostname)) {
+        e.preventDefault();
+        const newHref = urlWithCookieConsent(href);
+        // console.log('Old href, new href', href, newHref);
+        window.location.href = newHref;
+      }
+    }
+  }
+});
 
-//   const analytics = consent.statistics ? '1' : '0';
-//   const popups = consent.marketing ? '1' : '0';
-//   const healthCampaigns = consent.preferences ? '1' : '0';
+// TODO: This event listener will be required to insert consent query param for SPAs
+window.addEventListener('popstate', (event) => {
+  console.log('popstate', event);
+  if (shouldPropagateConsent) {
+    // alert(
+    //   `location: ${document.location}, state: ${JSON.stringify(event.state)}`,
+    // );
+  }
+});
 
-//   urlParams.append('consent', `an${analytics}pu${popups}hc${healthCampaigns}`);
+export function removeConsentQueryParam() {
+  const urlObj = new URL(window.location.href);
+  const urlParams = urlObj.searchParams;
+  urlParams.delete('consent');
+  window.history.replaceState({}, '', urlObj.toString());
+}
 
-//   return urlParams.toString();
-// }
+export function enableConsentPropagation(consent) {
+  console.log('enablePropagation');
+  shouldPropagateConsent = true;
+  consentVal = consent;
+}
 
+export function disableConsentPropagation() {
+  console.log('disablePropagation');
+  shouldPropagateConsent = false;
+}
+
+// Works with relative URLs
+/**
+ * Adds cookie-consent query param to a URL.
+ * To be called when navigating to a new page from Javascript.
+ * @param {string} url
+ * @returns Modified URL with consent query param (if consented)
+ */
 export function urlWithCookieConsent(url) {
-  if (!consent.consented) {
+  if (!consentVal.consented) {
     return url;
   }
 
-  const qs = url.indexOf('?') !== -1 ? url.substring(url.indexOf('?')) : '';
-  let urlParams = new URLSearchParams(qs);
+  const urlObj = safeCreateURL(url);
+  const urlParams = urlObj.searchParams;
 
-  const analytics = consent.statistics ? '1' : '0';
-  const popups = consent.marketing ? '1' : '0';
-  const healthCampaigns = consent.preferences ? '1' : '0';
+  const analytics = consentVal.statistics ? '1' : '0';
+  const popups = consentVal.marketing ? '1' : '0';
+  const healthCampaigns = consentVal.preferences ? '1' : '0';
 
   urlParams.append('consent', `an${analytics}pu${popups}hc${healthCampaigns}`);
 
-  return `${url}?${urlParams.toString()}`;
+  return urlObj.toString();
 }
 
 export function hasConsentQueryParam() {
-  const urlParams = new URLSearchParams(window.location.search)
+  const urlParams = new URLSearchParams(window.location.search);
   return urlParams.get('consent') !== null;
 }
 
 export function getConsentFromQueryParam() {
-  const urlParams = new URLSearchParams(window.location.search)
+  const urlParams = new URLSearchParams(window.location.search);
   const param = urlParams.get('consent');
   if (param !== null) {
     const analytics = param.match(/an([0-1])/)[1] === '1';
     const popups = param.match(/pu([0-1])/)[1] === '1';
     const healthCampaigns = param.match(/hc([0-1])/)[1] === '1';
 
-    consent = {
+    consentVal = {
       necessary: true,
       preferences: healthCampaigns,
       statistics: analytics,
@@ -147,13 +128,13 @@ export function getConsentFromQueryParam() {
       consented: true,
     };
   } else {
-    consent = {
-      necessary: false,
+    consentVal = {
+      necessary: true,
       preferences: false,
       statistics: false,
       marketing: false,
       consented: false,
     };
   }
-  return consent;
+  return consentVal;
 }

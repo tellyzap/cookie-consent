@@ -57,7 +57,7 @@ window.NHSCookieConsent = {
   setMarketing,
   setConsented,
 
-  urlWithCookieConsent
+  urlWithCookieConsent,
 };
 /* eslint-enable sort-keys */
 
