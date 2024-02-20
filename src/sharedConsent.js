@@ -91,11 +91,12 @@ export function disableConsentPropagation() {
  * @returns Modified URL with consent query param (if consented)
  */
 export function urlWithCookieConsent(url) {
-  if (!consentVal.consented) {
+  const urlObj = safeCreateURL(url);
+
+  if (!consentVal.consented || !allowlist.includes(urlObj.hostname)) {
     return url;
   }
 
-  const urlObj = safeCreateURL(url);
   const urlParams = urlObj.searchParams;
 
   const analytics = consentVal.statistics ? '1' : '0';
