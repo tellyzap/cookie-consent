@@ -110,6 +110,7 @@ export function urlWithCookieConsent(url) {
 
 export function hasConsentQueryParam() {
   const urlParams = new URLSearchParams(window.location.search);
+  console.log(`hasConsentQueryParam=${urlParams.get('consent') !== null}`);
   return urlParams.get('consent') !== null;
 }
 
@@ -137,5 +138,7 @@ export function getConsentFromQueryParam() {
       consented: false,
     };
   }
+
+  console.log('getConsentFromQueryParam', consentVal);
   return consentVal;
 }
