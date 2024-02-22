@@ -8,16 +8,24 @@ let consentVal = {
   statistics: false,
   marketing: false,
   consented: false,
+  timestamp: 0,
 };
 /* eslint-enable sort-key */
 
 /**
  * Allow-list of sites that have opted in to shared cookie consent
  */
+// const allowlist = [
+//   'wwwnhsuk.azurewebsites.net',
+//   'wwwnhsappservicenhsuk.azurewebsites.net',
+//   'accessloginnhsuk.azurewebsites.net',
+//   'www.nhs.uk',
+// ];
 const allowlist = [
-  'wwwnhsuk.azurewebsites.net',
-  'wwwnhsappservicenhsuk.azurewebsites.net',
-  'accessloginnhsuk.azurewebsites.net',
+  'localhost',
+  'wwwnhsuk.test',
+  'nhsapp.test',
+  'nhslogin.test',
   'www.nhs.uk',
 ];
 
@@ -103,7 +111,7 @@ export function urlWithCookieConsent(url) {
   const popups = consentVal.marketing ? '1' : '0';
   const healthCampaigns = consentVal.preferences ? '1' : '0';
 
-  urlParams.append('consent', `an${analytics}pu${popups}hc${healthCampaigns}`);
+  urlParams.append('consent', `an${analytics}pu${popups}hc${healthCampaigns}t${consentVal.timestamp}`);
 
   return urlObj.toString();
 }
@@ -114,6 +122,11 @@ export function hasConsentQueryParam() {
   return urlParams.get('consent') !== null;
 }
 
+export function isPreviousConsentOlder(newConsentTimestamp) {
+  const consent = getConsentFromQueryParam();
+  return consent.timestamp < newConsentTimestamp;
+}
+
 export function getConsentFromQueryParam() {
   const urlParams = new URLSearchParams(window.location.search);
   const param = urlParams.get('consent');
@@ -121,6 +134,7 @@ export function getConsentFromQueryParam() {
     const analytics = param.match(/an([0-1])/)[1] === '1';
     const popups = param.match(/pu([0-1])/)[1] === '1';
     const healthCampaigns = param.match(/hc([0-1])/)[1] === '1';
+    const timestamp = parseInt(param.substring(param.indexOf('t') + 1), 10);
 
     consentVal = {
       necessary: true,
@@ -128,6 +142,7 @@ export function getConsentFromQueryParam() {
       statistics: analytics,
       marketing: popups,
       consented: true,
+      timestamp,
     };
   } else {
     consentVal = {
@@ -136,6 +151,7 @@ export function getConsentFromQueryParam() {
       statistics: false,
       marketing: false,
       consented: false,
+      timestamp: 0,
     };
   }
 

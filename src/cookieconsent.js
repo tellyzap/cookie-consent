@@ -60,7 +60,9 @@ function getCookie() {
  * Creates a new cookie or replaces a cookie if one exists with the same name
  */
 function createCookie(value, days, path, domain, secure) {
-  const stringValue = JSON.stringify(value);
+  const timestampedValue = { ...value, timestamp: Date.now() };
+  const stringValue = JSON.stringify(timestampedValue);
+  //const stringValue = JSON.stringify(value);
   return createRawCookie(COOKIE_NAME, stringValue, days, path, domain, secure);
 }
 
@@ -129,6 +131,11 @@ function setConsent(consent, mode = COOKIE_TYPE.LONG) {
 function getUserCookieVersion() {
   const cookie = getCookie();
   return cookie === null ? null : cookie.version;
+}
+
+function getCookieTimestamp() {
+  const cookie = getCookie();
+  return cookie?.timestamp ?? 0;
 }
 
 /**
@@ -214,7 +221,9 @@ function shouldShowBanner() {
 
   // Do not show the banner if the URL has the consent query parameter
   if (hasConsentQueryParam()) {
-    return false;
+    const ts = getCookieTimestamp();
+    return ts > 0 && isPreviousConsentOlder(getCookieTimestamp());
+    //return false;
   }
 
   // Show the banner if there is no cookie. This user is a first-time visitor
@@ -243,12 +252,6 @@ function shouldShowBanner() {
  * - enables scripts and iframes depending on the consent
  */
 export function onload() {
-  if (getConsentSetting('consented')) {
-    enableConsentPropagation(getConsent());
-  } else {
-    disableConsentPropagation();
-  }
-
   if (shouldShowBanner()) {
     if (NO_BANNER) {
       // If NO_BANNER mode, we need to set "implied consent" to every cookie type
@@ -268,6 +271,12 @@ export function onload() {
   if (hasConsentQueryParam()) {
     setConsent(getConsentFromQueryParam());
     removeConsentQueryParam();
+  }
+
+  if (getConsentSetting('consented')) {
+    enableConsentPropagation(getConsent());
+  } else {
+    disableConsentPropagation();
   }
 
   // if a cookie is set but it's invalid, clear all cookies.
