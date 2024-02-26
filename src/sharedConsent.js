@@ -15,18 +15,17 @@ let consentVal = {
 /**
  * Allow-list of sites that have opted in to shared cookie consent
  */
-// const allowlist = [
-//   'wwwnhsuk.azurewebsites.net',
-//   'wwwnhsappservicenhsuk.azurewebsites.net',
-//   'accessloginnhsuk.azurewebsites.net',
-//   'www.nhs.uk',
-// ];
 const allowlist = [
+  // For deployed POC
+  'wwwnhsuk.azurewebsites.net',
+  'wwwnhsappservicenhsuk.azurewebsites.net',
+  'accessloginnhsuk.azurewebsites.net',
+  'www.nhs.uk',
+  // For local development
   'localhost',
   'wwwnhsuk.test',
   'nhsapp.test',
   'nhslogin.test',
-  'www.nhs.uk',
 ];
 
 /**
