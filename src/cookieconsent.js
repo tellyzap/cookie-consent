@@ -8,6 +8,8 @@ import {
   enableConsentPropagation,
   disableConsentPropagation,
   removeConsentQueryParam,
+  versionSameAsQueryParam,
+  getSCPVersion,
 } from './sharedConsent';
 
 /**
@@ -15,7 +17,8 @@ import {
  * bump this version up afterwards. It will then give the user the banner again
  * to consent to the new rules
  */
-export const COOKIE_VERSION = 4;
+// export const COOKIE_VERSION = 4;
+export const COOKIE_VERSION = getSCPVersion();
 const COOKIE_NAME = 'nhsuk-cookie-consent';
 
 /**
@@ -60,9 +63,7 @@ function getCookie() {
  * Creates a new cookie or replaces a cookie if one exists with the same name
  */
 function createCookie(value, days, path, domain, secure) {
-  const timestampedValue = { ...value, timestamp: Date.now() };
-  const stringValue = JSON.stringify(timestampedValue);
-  //const stringValue = JSON.stringify(value);
+  const stringValue = JSON.stringify(value);
   return createRawCookie(COOKIE_NAME, stringValue, days, path, domain, secure);
 }
 
@@ -118,7 +119,7 @@ function setConsent(consent, mode = COOKIE_TYPE.LONG) {
 
   // eslint-disable-next-line no-use-before-define
   if (getConsentSetting('consented')) {
-    enableConsentPropagation(getConsent());
+    enableConsentPropagation(getConsent(), getUserCookieVersion());
   } else {
     disableConsentPropagation();
   }
@@ -133,11 +134,6 @@ function getUserCookieVersion() {
   return cookie === null ? null : cookie.version;
 }
 
-function getCookieTimestamp() {
-  const cookie = getCookie();
-  return cookie?.timestamp ?? 0;
-}
-
 /**
  * Is the cookie that is currently set on the browser valid.
  * a "valid" cookie is one which has the latest COOKIE_VERSION number.
@@ -146,7 +142,7 @@ function getCookieTimestamp() {
  */
 function isValidVersion() {
   const currentVersion = getUserCookieVersion();
-  return currentVersion === null ? null : currentVersion >= COOKIE_VERSION;
+  return currentVersion === null ? false : currentVersion >= COOKIE_VERSION;
 }
 
 export function getConsentSetting(key) {
@@ -219,11 +215,10 @@ function shouldShowBanner() {
     return false;
   }
 
-  // Do not show the banner if the URL has the consent query parameter
-  if (hasConsentQueryParam()) {
-    const ts = getCookieTimestamp();
-    return ts > 0 && isPreviousConsentOlder(getCookieTimestamp());
-    //return false;
+  // Do not show banner if query param and no consent/no cookie, unless version is different
+  // (cookie will be set from query param)
+  if (hasConsentQueryParam() && ((getCookie() === null || !getConsentSetting('consented'))) && versionSameAsQueryParam(getUserCookieVersion() || 0)) {
+    return false;
   }
 
   // Show the banner if there is no cookie. This user is a first-time visitor
@@ -269,12 +264,15 @@ export function onload() {
   }
 
   if (hasConsentQueryParam()) {
-    setConsent(getConsentFromQueryParam());
+    if (!getConsentSetting('consented')) {
+      console.log('Setting consent from incoming query parameter');
+      setConsent(getConsentFromQueryParam());
+    }
     removeConsentQueryParam();
   }
 
   if (getConsentSetting('consented')) {
-    enableConsentPropagation(getConsent());
+    enableConsentPropagation(getConsent(), getUserCookieVersion());
   } else {
     disableConsentPropagation();
   }

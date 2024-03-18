@@ -8,7 +8,7 @@ let consentVal = {
   statistics: false,
   marketing: false,
   consented: false,
-  timestamp: 0,
+  version: 0,
 };
 /* eslint-enable sort-key */
 
@@ -43,25 +43,6 @@ function safeCreateURL(url) {
   return safeUrl;
 }
 
-/**
- * Adds consent query param to any URLs in links, if the href contains a different domain to the
- * current one, which is in the allowlist
- */
-window.addEventListener('click', (e) => {
-  if (shouldPropagateConsent) {
-    const href = e.target.getAttribute('href');
-    if (href) {
-      const url = safeCreateURL(href);
-      if (url.hostname !== window.location.hostname && allowlist.includes(url.hostname)) {
-        e.preventDefault();
-        const newHref = urlWithCookieConsent(href);
-        // console.log('Old href, new href', href, newHref);
-        window.location.href = newHref;
-      }
-    }
-  }
-});
-
 // TODO: This event listener will be required to insert consent query param for SPAs
 window.addEventListener('popstate', (event) => {
   console.log('popstate', event);
@@ -79,10 +60,33 @@ export function removeConsentQueryParam() {
   window.history.replaceState({}, '', urlObj.toString());
 }
 
-export function enableConsentPropagation(consent) {
+/**
+ * Enables consent propagation for all links on the page.
+ * Should only be called once per page load.
+ * Adds consent query param to any URLs in links, if the href contains a different domain to the
+ * current one, which is in the allowlist.
+ */
+export function enableConsentPropagation(consent, version) {
   console.log('enablePropagation');
   shouldPropagateConsent = true;
-  consentVal = consent;
+  consentVal = { ...consent, version };
+
+  document.querySelectorAll('a').forEach((link) => {
+    link.addEventListener('click', (e) => {
+      if (shouldPropagateConsent) {
+        const href = e.currentTarget.getAttribute('href');
+        if (href) {
+          const url = safeCreateURL(href);
+          if (url.hostname !== window.location.hostname && allowlist.includes(url.hostname)) {
+            e.preventDefault();
+            const newHref = urlWithCookieConsent(href);
+            // console.log('Old href, new href', href, newHref);
+            window.location.href = newHref;
+          }
+        }
+      }
+    });
+  });
 }
 
 export function disableConsentPropagation() {
@@ -109,8 +113,9 @@ export function urlWithCookieConsent(url) {
   const analytics = consentVal.statistics ? '1' : '0';
   const popups = consentVal.marketing ? '1' : '0';
   const healthCampaigns = consentVal.preferences ? '1' : '0';
+  const version = consentVal.version;
 
-  urlParams.append('consent', `an${analytics}pu${popups}hc${healthCampaigns}t${consentVal.timestamp}`);
+  urlParams.append('consent', `an${analytics}pu${popups}hc${healthCampaigns}v${version}`);
 
   return urlObj.toString();
 }
@@ -121,9 +126,9 @@ export function hasConsentQueryParam() {
   return urlParams.get('consent') !== null;
 }
 
-export function isPreviousConsentOlder(newConsentTimestamp) {
+export function versionSameAsQueryParam(currentCookieVersion) {
   const consent = getConsentFromQueryParam();
-  return consent.timestamp < newConsentTimestamp;
+  return consent.version === currentCookieVersion;
 }
 
 export function getConsentFromQueryParam() {
@@ -133,7 +138,7 @@ export function getConsentFromQueryParam() {
     const analytics = param.match(/an([0-1])/)[1] === '1';
     const popups = param.match(/pu([0-1])/)[1] === '1';
     const healthCampaigns = param.match(/hc([0-1])/)[1] === '1';
-    const timestamp = parseInt(param.substring(param.indexOf('t') + 1), 10);
+    const version = parseInt(param.substring(param.indexOf('v') + 1), 10);
 
     consentVal = {
       necessary: true,
@@ -141,7 +146,7 @@ export function getConsentFromQueryParam() {
       statistics: analytics,
       marketing: popups,
       consented: true,
-      timestamp,
+      version,
     };
   } else {
     consentVal = {
@@ -150,10 +155,14 @@ export function getConsentFromQueryParam() {
       statistics: false,
       marketing: false,
       consented: false,
-      timestamp: 0,
+      version: 0,
     };
   }
 
   console.log('getConsentFromQueryParam', consentVal);
   return consentVal;
+}
+
+export function getSCPVersion() {
+  return process.env.SCP_VERSION ?? 4;
 }

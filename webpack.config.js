@@ -45,6 +45,7 @@ module.exports = {
       'process.env.LOG_TO_SPLUNK': JSON.stringify(process.env.LOG_TO_SPLUNK),
       'process.env.NO_BANNER': JSON.stringify(process.env.NO_BANNER),
       'process.env.POLICY_URL': JSON.stringify(process.env.POLICY_URL),
+      'process.env.SCP_VERSION': JSON.stringify(process.env.SCP_VERSION),
     }),
   ],
 };
