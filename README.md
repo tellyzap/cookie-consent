@@ -10,6 +10,17 @@ npm start
 
 Go to http://localhost:8080/tests/example/ for an example site using the cookie javascript.
 
+### This example demonstrates the implementation of a Shared Cookie Policy to share consent across different domains (eTLD+1):
+
+http://localhost:8080/tests/example/shared
+
+_NOTE:_
+
+This demo requires the setting up of a local web domain of `nhslogin.test`.
+
+The following article describes how to set up local domains on a Mac: https://allanphilipbarku.medium.com/setup-automatic-local-domains-with-dnsmasq-on-macos-ventura-b4cd460d8cb3
+
+
 ## Usage
 
 Include the cookie javascript in your page
@@ -67,9 +78,9 @@ console.log(NHSCookieConsent.VERSION)
 
 - `getPreferences()`
 - `getStatistics()`
-- `getMarketing()` 
+- `getMarketing()`
 
-These methods get the status of the cookie consent for that type of cookie.  
+These methods get the status of the cookie consent for that type of cookie.
 Returns a boolean.
 
 - `getConsented()`
@@ -81,8 +92,8 @@ It is primarily used to hide the banner once consent has been given.
 - `setStatistics(value)`
 - `setMarketing(value)`
 
-These methods set the status of the cookie consent for that type of cookie.  
-set methods should only be used in response to a user interaction accepting that type of cookie.  
+These methods set the status of the cookie consent for that type of cookie.
+set methods should only be used in response to a user interaction accepting that type of cookie.
 Expects a boolean `value` argument.
 
 - `setConsented(value)`
@@ -166,10 +177,10 @@ N.B. The integration tests rely on there being a test server available on localh
 
 ## Deployment
 
-When code is merged into the main branch an Azure build pipeline will be triggered. If the pipeline runs successfully 
+When code is merged into the main branch an Azure build pipeline will be triggered. If the pipeline runs successfully
 it will produce a build artifact containing the compiled javascript.
 
-To deploy the artifact simply create a release referencing the appropriate build artifact and run the release pipeline in 
+To deploy the artifact simply create a release referencing the appropriate build artifact and run the release pipeline in
 Azure DevOps, selecting the required environments. The compiled javascript will be uploaded to the following Azure Storage Account:
 
 | Environment | Storage Account | Container | Blob path |
@@ -178,7 +189,7 @@ Azure DevOps, selecting the required environments. The compiled javascript will 
 | Staging     | nhsukassetsstaging | staging | scripts / cookie-consent.js    |
 | Production  | nhsukassets        | scripts | cookie-consent.js              |
 
-NOTE: When deploying to the Staging and Production environments, the Akamai cache should be flushed using the full URL of the 
+NOTE: When deploying to the Staging and Production environments, the Akamai cache should be flushed using the full URL of the
 javascript resource. The resource content can then be verified by accessing the URL in a browser.
 
 ## Contributing to a release.

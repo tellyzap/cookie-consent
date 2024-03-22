@@ -128,7 +128,10 @@ export function hasConsentQueryParam() {
 
 export function versionSameAsQueryParam(currentCookieVersion) {
   const consent = getConsentFromQueryParam();
-  return consent.version === currentCookieVersion;
+  if (consent.version !== (currentCookieVersion ?? 0)) {
+    console.log(`SCP version changed: previous site=${consent.version}, current site=${currentCookieVersion ?? 'null'}`);
+  }
+  return consent.version === (currentCookieVersion ?? 0);
 }
 
 export function getConsentFromQueryParam() {

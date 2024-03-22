@@ -32,8 +32,15 @@
       <div id="cookie-list"></div>
 
       <iframe data-src="https://example.com" data-cookieconsent="statistics"></iframe>
+      <br/>
+      <a href="http://nhslogin.test:8080/tests/example/custom-link.html">Test Consent Propagation</a>
+      <!-- <a id="change-page">Test Consent Propagation</a> -->
 
       <script src="./js/show-cookie-data.js"></script>
+
+    <!-- <script>
+      document.getElementById('change-page').href = NHSCookieConsent.urlWithCookieConsent("./custom-link.html");
+    </script> -->
     </main>
   </body>
 </html>

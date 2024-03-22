@@ -112,7 +112,7 @@ function setConsent(consent, mode = COOKIE_TYPE.LONG) {
     ...existingConsent,
     ...consent,
     // add version information to the cookie consent settings
-    version: COOKIE_VERSION,
+    version: consent?.version ?? COOKIE_VERSION,
   };
 
   createCookie(cookieValue, days, path);
@@ -178,10 +178,19 @@ function acceptConsent() {
 
 // If analytics consent is given, change the value of the cookie
 function acceptAnalyticsConsent() {
-  setConsent({
-    statistics: true,
-    consented: true,
-  });
+
+  if (hasConsentQueryParam()) {
+    console.log('Setting consent from incoming query parameter');
+    setConsent(getConsentFromQueryParam());
+    removeConsentQueryParam();
+  } else {
+    console.log('No incoming query parameter');
+    setConsent({
+      statistics: true,
+      consented: true,
+    });
+  }
+
   enableScriptsAndIframes();
 }
 
@@ -217,8 +226,14 @@ function shouldShowBanner() {
 
   // Do not show banner if query param and no consent/no cookie, unless version is different
   // (cookie will be set from query param)
-  if (hasConsentQueryParam() && ((getCookie() === null || !getConsentSetting('consented'))) && versionSameAsQueryParam(getUserCookieVersion() || 0)) {
-    return false;
+  if (hasConsentQueryParam())
+  {
+    if (!versionSameAsQueryParam(getUserCookieVersion() || COOKIE_VERSION)) {
+      return true;
+    }
+    if (getCookie() === null || !getConsentSetting('consented')) {
+      return false;
+    }
   }
 
   // Show the banner if there is no cookie. This user is a first-time visitor
@@ -264,10 +279,6 @@ export function onload() {
   }
 
   if (hasConsentQueryParam()) {
-    if (!getConsentSetting('consented')) {
-      console.log('Setting consent from incoming query parameter');
-      setConsent(getConsentFromQueryParam());
-    }
     removeConsentQueryParam();
   }
 
